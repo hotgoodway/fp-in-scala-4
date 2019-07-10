@@ -1,0 +1,15 @@
+# Intellij
+.idea/
+*.iml
+*.iws
+
+# Emacs
+*~
+
+# Mac
+.DS_Store
+
+# Project
+project/target/
+project/project/target
+target/

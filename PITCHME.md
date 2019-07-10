@@ -228,7 +228,184 @@ trait Option[+A] {
 
 ---
 
-### EXECISE 4.1
+### EXERCISE 4.1
 
 基本関数を全て実装せよ
 
+---
+
+### ANSWER 4.1
+
+```
+  def map[B](f: A => B): Option[B] = this match {
+    case Some(a) => Some(f(a))
+    case None => None
+  }
+
+  def getOrElse[B>:A](default: => B): B = this match {
+    case Some(a) => a
+    case None => default
+  }
+
+  def flatMap[B](f: A => Option[B]): Option[B] = this match {
+    case Some(a) => f(a)
+    case None => None
+  }
+
+  def orElse[B>:A](ob: => Option[B]): Option[B] = this match {
+    case Some(_) => this
+    case None => ob
+  }
+
+  def filter(f: A => Boolean): Option[A] = this match {
+    case Some(a) if f(a) => this
+    case _ => None
+  }
+
+```
+
+### Option の基本関数を使用するシナリオ
+
+Employeeの例
+
+(略)
+
+---
+
+### EXERCISE 4.2
+
+flatMap をベースとして variance 関数を実装せよ
+
+シーケンスの平均をm、シーケンスの各要素をxとすれば、分散は math.pow(x - m, 2) の平均となる
+```
+  def variance(xs: Seq[Double]): Option[Double]
+```
+
+---
+
+### ANSWER 4.2
+
+```
+  def variance(xs: Seq[Double]): Option[Double] =
+    mean(xs).flatMap(avg => mean(xs.map(x => math.pow(x - avg, 2))))
+```
+
+最初の失敗(Empty)が検出される時点で計算は中止される
+
+---
+
+### 4.3.2 Option の合成、リフト、例外指向の APIのラッピング
+
+呼び出し元の Some / None 分岐処理は急がなくでも良い
+
+```
+  def lift[A, B](f: A => B): Option[A] => Option[B] = _ map f
+```
+
+f を lift した関数
+
+```
+  val abs0: Option[Double] => Option[Double] = lift(math.abs)
+```
+
+lift を通して math.abs を Option コンテキスト内でもど動作するようになる
+
+---
+
+### 自動車保険料計算の例
+
+```
+  def parseInsuranceRateQuote(
+    age: String,
+    numberOfSpeedingTickets: String
+  ): Option[Double] = {
+    val optAge: Option[Int] = Try(age.toInt)
+    val optTicket: Option[Int] = Try(numberOfSpeedingTickets.toInt)
+    insuranceRateQuote(optAge, optTickets)
+  }
+  
+  def Try[A](a: => A): Option[A] =
+    try Some(a)
+    catch { case e: Exception => None }
+```
+
+欠点: fail first できない
+
+---
+
+### EXERCISE 4.3
+
+2項関数を使ってOption型の2の値を結合する総称関数 map2 を記述せよ。
+
+```
+  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C]
+```
+
+---
+
+### ANSWER 4.3
+
+```
+  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = (a, b) match {
+    case (Some(aa), Some(bb)) => Some(f(aa, bb))
+    case _ => None
+  }
+```
+
+```
+  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] =
+    a flatMap (aa => b map (bb => f(aa, bb)))
+```
+
+---
+
+### EXERCISE 4.4
+
+Option のリストを 1つのOptionにまとめる sequence 関数を記述せよ。
+
+```
+  def sequence[A](a: List[Option[A]]): Option[List[A]]
+```
+
+---
+
+### ANSWER 4.4
+
+```
+  def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
+    case Nil => None
+    case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
+  }
+```
+
+---
+
+### 残念な例
+
+```
+  def parseInts(a: List[String]): Option[List[Int] =
+    sequence(a map (i => Try(i.toInt)))
+```
+
+リストを2回走査するため効率よくない
+
+---
+
+### EXERCISE 4.5
+
+リストを1回だけの走査で、traverse 関数を実装せよ
+
+```
+  def traverse[A, B](a: List[A)(f: A => Option[B]): Option[List[B]]
+```
+
+---
+
+### ANSWER 4.5
+
+```
+  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
+    case Nil => None
+    case h::t => map2(f(h), traverse(t)(f))(_ :: _) // Option[B], Option[List[B]]
+  }
+```
