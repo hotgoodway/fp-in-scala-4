@@ -194,13 +194,15 @@ case class Some[+A](get: A) extends Option[A]
 case object None extends Option[Nothing]
 ```
 
+Optionを使った実装
+
 ```
 def mean(xs: Seq[Double]): Option[Double] =
   if (xs.isEmpty) None
   elase Some(xs.sum / xs.length)
 ```
 
-完全な関数になる
+完全な関数になる!
 
 ---
 
@@ -208,7 +210,7 @@ def mean(xs: Seq[Double]): Option[Double] =
 
 - 指定されたキーによるマップ検索
 - リストなどで定義されている headOption と lastOption
-...
+- ...
 
 ---
 
