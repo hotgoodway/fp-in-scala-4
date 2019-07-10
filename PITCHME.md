@@ -96,7 +96,7 @@ yが参照透過ではない!
 2/2 例外が型安全ではない
 
 
-failingFn, Int => Intの型から例外が発生することなど何もわからないので実行時まで検出できません
+failingFn, Int => Intの型から例外が発生することなど何もわからないので実行時まで検出できない
 
 ---
 
@@ -137,9 +137,60 @@ def mean(xs: Seq[Double]): Double =
 
 ```
 
+### 一つ目の方法
+
+Double型の偽の値を返すこと
+
+```
+def mean(xs: Seq[Double]): Double =
+  if (xs.isEmpty) Double.NaN
+  else xs.sum / xs.length
+```
+
+```
+  // java.lang.Double
+  /**
+   * A constant holding a Not-a-Number (NaN) value of type
+   * {@code double}. It is equivalent to the value returned by
+   * {@code Double.longBitsToDouble(0x7ff8000000000000L)}.
+   */
+  public static final double NaN = 0.0d / 0.0;
+```
+
 ---
 
+### 却下理由
 
+1. エラーが隠れてしまう
+2/3/4. (略)
 
+### 2つ目の方法
+
+呼び出す元で例外時の戻り値を用意すること
+
+```
+def mean(xs: Seq[Double], onEmpty: Double): Double =
+  if (xs.isEmpty) onEmpty
+  else xs.sum / xs.length
+```
+
+---
+
+### 却下理由
+
+呼び出し元処理で分岐できない
+※ 一つ目の方法と似ている
+
+---
+
+## 4.3 Option データ型
+
+---
+
+```
+sealed trait Option[+A]
+case class Some[+A](get: A) extends Option[A]
+case object None extends Option[Nothing]
+```
 
 
