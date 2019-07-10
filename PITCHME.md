@@ -68,7 +68,6 @@ yが参照透過ではない!
 
 コンテキストに依存せず、ローカルでの推論が可能である。
 
-
 例: 1 + 2
 
 ---
@@ -76,7 +75,6 @@ yが参照透過ではない!
 ### 参照透過ではない式
 
 コンテキストに依存し、よりグローバルな推論が必要となる。
-
 
 例: throw new Exception("fail")
 
@@ -86,7 +84,6 @@ yが参照透過ではない!
 
 1/2 例外ベースの複雑なコードが記述可能
 
-
 昔の忠告: 例外はエラー処理のみ使用するべきであり、制御フローには使用するべきではない
 
 ---
@@ -94,7 +91,6 @@ yが参照透過ではない!
 ### 2つ問題
 
 2/2 例外が型安全ではない
-
 
 failingFn, Int => Intの型から例外が発生することなど何もわからないので実行時まで検出できない
 
@@ -137,6 +133,8 @@ def mean(xs: Seq[Double]): Double =
 
 ```
 
+---
+
 ### 一つ目の方法
 
 Double型の偽の値を返すこと
@@ -162,7 +160,10 @@ def mean(xs: Seq[Double]): Double =
 ### 却下理由
 
 1. エラーが隠れてしまう
+
 2/3/4. (略)
+
+---
 
 ### 2つ目の方法
 
@@ -193,4 +194,39 @@ case class Some[+A](get: A) extends Option[A]
 case object None extends Option[Nothing]
 ```
 
+```
+def mean(xs: Seq[Double]): Option[Double] =
+  if (xs.isEmpty) None
+  elase Some(xs.sum / xs.length)
+```
+
+完全な関数になる
+
+---
+
+### 4.3.1 Option の使用パターン
+
+- 指定されたキーによるマップ検索
+- リストなどで定義されている headOption と lastOption
+...
+
+---
+
+### Option の基本関数
+
+```
+trait Option[+A] {
+  def map[B](f: A => B): Option[B])
+  def flatMap[B](f: A => Option[B])
+  def getOrElse[B >: A](default: => B): B
+  def orElse[B >: A](ob: => Option[B])]: Option[B]
+  def filter(f: A => Boolean): Option[A]
+}
+```
+
+---
+
+### EXECISE 4.1
+
+基本関数を全て実装せよ
 
