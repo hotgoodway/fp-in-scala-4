@@ -369,7 +369,7 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
 
 ```
   def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
   }
 ```
@@ -401,7 +401,7 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
 
 ```
   def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => map2(f(h), traverse(t)(f))(_ :: _) // Option[B], Option[List[B]]
   }
 ```
@@ -444,7 +444,7 @@ Optionだと表現力が足りない
       Right(xs.sum / xs.length)
 ```
 
-String -> Exception に変更すると情報力さらに増える
+String -> Exception に変更すると情報力がさらに増える
 
 ---
 
@@ -455,6 +455,8 @@ String -> Exception に変更すると情報力さらに増える
     try Right(a)
     case { case e: Exception => Left(e) }
 ```
+
+---
 
 ###  EXERCISE 4.6
 
@@ -480,15 +482,17 @@ sealed trait Either[+E, +A] {
     case Right(a) => Right(f(a))
   }
 
-  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = this match {
-    case Left(e) => Left(e)
-    case Right(a) => f(a)
-  }
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] =
+    this match {
+      case Left(e) => Left(e)
+      case Right(a) => f(a)
+    }
 
-  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = this match {
-    case Left(_) => b
-    case Right(_) => this
-  }
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] =
+    this match {
+      case Left(_) => b
+      case Right(_) => this
+    }
   ...
 ```
 
@@ -507,10 +511,42 @@ sealed trait Either[+E, +A] {
       bb <- b
     } yield f(aa, bb)
 
-  def map2_3[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = (this, b) match {
-    case (Right(aa), Right(bb)) => Right(f(aa, bb))
-    case (Left(e), _) => Left(e)
-    case (_, Left(e)) => Left(e)
-  }
-}
+  def map2_3[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    (this, b) match {
+      case (Right(aa), Right(bb)) => Right(f(aa, bb))
+      case (Left(e), _) => Left(e)
+      case (_, Left(e)) => Left(e)
+    }
 ```
+
+---
+
+### EXERCISE 4.7
+
+sequence と traverse を実装せよ。エラーが発生した場合は、最初に検出されたエラーを返す。
+
+```
+  def sequence[E,A](es: List[Either[E,A]]): Either[E,List[A]] = ???
+  
+  def traverse[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] = ???
+```
+
+---
+
+### ANSWER 4.7
+
+```
+  def sequence[E,A](es: List[Either[E,A]]): Either[E,List[A]] =
+    es match {
+      case Nil => Right(Nil)
+      case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
+    }
+
+  def traverse[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] =
+    es match {
+      case Nil => Right(Nil)
+      case h::t => f(h).map2(traverse(t)(f))(_ :: _) // Right(B), Right[List[B]]
+    }
+```
+
+### Either を使った
