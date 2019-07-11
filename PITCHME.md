@@ -549,4 +549,55 @@ sequence と traverse を実装せよ。エラーが発生した場合は、最�
     }
 ```
 
-### Either を使った
+---
+
+### Either を使ったデータ検証(Validate)
+
+```
+object Person {
+  def mkName(name: String): Either[String, Name] =
+    if (name == "" || name == null) Left("Name is empty.")
+    else Right(Name(name))
+
+  def mkAge(age: Int): Either[String, Age] =
+    if (age < 0) Left("Age is out of range.")
+    else Right(Age(age))
+
+  def mkPerson(name: String, age: Int): Either[String, Person] =
+    mkName(name).map2(mkAge(age))(Person(_, _))
+}
+```
+
+すべてのエラーを拾うにはどうすれば良い?
+
+---
+
+### OPEN ANSWER
+
+```
+  There are a number of variations on `Option` and `Either`. If we want to accumulate multiple errors, a simple
+  approach is a new data type that lets us keep a list of errors in the data constructor that represents failures:
+  
+  trait Partial[+A,+B]
+  case class Errors[+A](get: Seq[A]) extends Partial[A,Nothing]
+  case class Success[+B](get: B) extends Partial[Nothing,B]
+  
+  There is a type very similar to this called `Validation` in the Scalaz library. You can implement `map`, `map2`,
+  `sequence`, and so on for this type in such a way that errors are accumulated when possible (`flatMap` is unable to
+  accumulate errors--can you see why?). This idea can even be generalized further--we don't need to accumulate failing
+  values into a list; we can accumulate values using any user-supplied binary function.
+  
+  It's also possible to use `Either[List[E],_]` directly to accumulate errors, using different implementations of
+  helper functions like `map2` and `sequence`.
+```
+
+---
+
+## 4.5 まとめ
+
+* 関数型のエラー処理の基本原理を紹介した。
+* さらに、高階関数を使ってエラーの処理と伝搬に共通するパターンをカプセル化できるようにすることを紹介した
+
+---
+
+## おわり
