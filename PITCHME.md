@@ -189,6 +189,8 @@ def mean(xs: Seq[Double], onEmpty: Double): Double =
 
 ---
 
+## Option の定義
+
 ```
 sealed trait Option[+A]
 case class Some[+A](get: A) extends Option[A]
@@ -197,7 +199,7 @@ case object None extends Option[Nothing]
 
 ---
 
-### Optionを使った実装
+### Option を使った実装
 
 ```
 def mean(xs: Seq[Double]): Option[Double] =
@@ -343,10 +345,11 @@ lift を通して math.abs を Option コンテキスト内でもど動作する
 ### ANSWER 4.3
 
 ```
-  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = (a, b) match {
-    case (Some(aa), Some(bb)) => Some(f(aa, bb))
-    case _ => None
-  }
+  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = 
+    (a, b) match {
+      case (Some(aa), Some(bb)) => Some(f(aa, bb))
+      case _ => None
+    }
 ```
 
 ```
@@ -415,7 +418,7 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
 
 ### 本章の目的
 
-エラーや例外を通常の値で表し、エラー処理とリカバリに共通するパターンを関数として抽出できるようにすること。
+> エラーや例外を通常の値で表し、エラー処理とリカバリに共通するパターンを関数として抽出できるようにすること。
 
 Optionだと表現力が足りない
 
@@ -445,7 +448,7 @@ Optionだと表現力が足りない
       Right(xs.sum / xs.length)
 ```
 
-String -> Exception に変更すると情報力がさらに増える
+String -> Exception より表現力が増える
 
 ---
 
@@ -575,21 +578,22 @@ object Person {
 
 ### OPEN ANSWER
 
-
->  There are a number of variations on `Option` and `Either`. If we want to accumulate multiple errors, a simple
->  approach is a new data type that lets us keep a list of errors in the data constructor that represents failures:
->  
->  trait Partial[+A,+B]
->  case class Errors[+A](get: Seq[A]) extends Partial[A,Nothing]
->  case class Success[+B](get: B) extends Partial[Nothing,B]
->  
->  There is a type very similar to this called `Validation` in the Scalaz library. You can implement `map`, `map2`,
->  `sequence`, and so on for this type in such a way that errors are accumulated when possible (`flatMap` is unable to
->  accumulate errors--can you see why?). This idea can even be generalized further--we don't need to accumulate failing
->  values into a list; we can accumulate values using any user-supplied binary function.
->  
->  It's also possible to use `Either[List[E],_]` directly to accumulate errors, using different implementations of
->  helper functions like `map2` and `sequence`.
+```
+  There are a number of variations on `Option` and `Either`. If we want to accumulate multiple errors, a simple
+  approach is a new data type that lets us keep a list of errors in the data constructor that represents failures:
+  
+  trait Partial[+A,+B]
+  case class Errors[+A](get: Seq[A]) extends Partial[A,Nothing]
+  case class Success[+B](get: B) extends Partial[Nothing,B]
+  
+  There is a type very similar to this called `Validation` in the Scalaz library. You can implement `map`, `map2`,
+  `sequence`, and so on for this type in such a way that errors are accumulated when possible (`flatMap` is unable to
+  accumulate errors--can you see why?). This idea can even be generalized further--we don't need to accumulate failing
+  values into a list; we can accumulate values using any user-supplied binary function.
+  
+  It's also possible to use `Either[List[E],_]` directly to accumulate errors, using different implementations of
+  helper functions like `map2` and `sequence`.
+```
 
 ---
 
@@ -602,4 +606,4 @@ object Person {
 
 ## おわり
 
-> Signature is enough
+> Signature is enough!
