@@ -228,7 +228,7 @@ trait Option[+A] {
 
 ---
 
-### EXERCISE 4.1
+### EXERCISE 
 
 基本関数を全て実装せよ
 
@@ -241,22 +241,18 @@ trait Option[+A] {
     case Some(a) => Some(f(a))
     case None => None
   }
-
   def getOrElse[B>:A](default: => B): B = this match {
     case Some(a) => a
     case None => default
   }
-
   def flatMap[B](f: A => Option[B]): Option[B] = this match {
     case Some(a) => f(a)
     case None => None
   }
-
   def orElse[B>:A](ob: => Option[B]): Option[B] = this match {
     case Some(_) => this
     case None => ob
   }
-
   def filter(f: A => Boolean): Option[A] = this match {
     case Some(a) if f(a) => this
     case _ => None
@@ -408,4 +404,113 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
     case Nil => None
     case h::t => map2(f(h), traverse(t)(f))(_ :: _) // Option[B], Option[List[B]]
   }
+```
+
+---
+
+## 4.4 Either データ型
+
+---
+
+### 本章の目的
+
+エラーや例外を通常の値で表し、エラー処理とリカバリに共通するパターンを関数として抽出できるようにすること。
+
+Optionだと表現力が足りない
+
+---
+
+### Eitherの定義
+
+```
+  sealed trait Either[+E, +A]
+  case class Left[+E](value: E) extends Either[E, Nothing]
+  case class Right[+A](value: A) extends Either[Nothing, A]
+```
+
+- Right -> 成功 ※ 英語の意味は「正しい」
+- Left -> エラー
+
+---
+
+### mean の例
+
+
+```
+  def mean(xs: IndexedSeq[Double]): Either[String, Double] =
+    if (xs.isEmpty)
+      Left("mean of empty list!")
+    else
+      Right(xs.sum / xs.length)
+```
+
+String -> Exception に変更すると情報力さらに増える
+
+---
+
+### Try 関数
+
+```
+  def Try[A](a: => A): Either[Exception, A] =
+    try Right(a)
+    case { case e: Exception => Left(e) }
+```
+
+###  EXERCISE 4.6
+
+Right 値を操作する map, flatMap, orElse, map2 をEither に追加せよ。
+
+```
+sealed trait Either[+E, +A] {
+  def map[B](f: A => B): Either[E, B] = ???
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = ???
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = ???
+  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = ???
+}
+```
+
+---
+
+### ANSWER 4.6
+
+```
+sealed trait Either[+E, +A] {
+  def map[B](f: A => B): Either[E, B] = this match {
+    case Left(e) => Left(e)
+    case Right(a) => Right(f(a))
+  }
+
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = this match {
+    case Left(e) => Left(e)
+    case Right(a) => f(a)
+  }
+
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = this match {
+    case Left(_) => b
+    case Right(_) => this
+  }
+  ...
+```
+
+---
+
+### ANSWER 4.6-2
+
+```
+  ...
+  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    b.flatMap(bb => this.map(aa => f(aa, bb)))
+
+  def map2_2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    for {
+      aa <- this
+      bb <- b
+    } yield f(aa, bb)
+
+  def map2_3[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = (this, b) match {
+    case (Right(aa), Right(bb)) => Right(f(aa, bb))
+    case (Left(e), _) => Left(e)
+    case (_, Left(e)) => Left(e)
+  }
+}
 ```
