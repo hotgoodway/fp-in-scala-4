@@ -44,18 +44,18 @@ object Option {
 
   def failingFn2(i: Int): Int = {
     try {
-      val x = 42 + 5
-      x + ((throw new Exception("fail!")): Int) // A thrown Exception can be given any type; here we're annotating it with the type `Int`
-    }
-    catch { case e: Exception => 43 }
-  }
+  val x = 42 + 5
+  x + ((throw new Exception("fail!")): Int) // A thrown Exception can be given any type; here we're annotating it with the type `Int`
+}
+catch { case e: Exception => 43 }
+}
 
   def mean(xs: Seq[Double]): Option[Double] =
-    if (xs.isEmpty) None
-    else Some(xs.sum / xs.length)
+  if (xs.isEmpty) None
+  else Some(xs.sum / xs.length)
 
   def variance(xs: Seq[Double]): Option[Double] =
-    mean(xs).flatMap(avg => mean(xs.map(x => math.pow(x - avg, 2))))
+  mean(xs).flatMap(avg => mean(xs.map(x => math.pow(x - avg, 2))))
 
   def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = (a, b) match {
     case (Some(aa), Some(bb)) => Some(f(aa, bb))
@@ -66,12 +66,12 @@ object Option {
     a.flatMap(aa => b.map(bb => f(aa, bb)))
 
   def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
   }
 
   def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => map2(f(h), traverse(t)(f))(_ :: _) // Option[B], Option[List[B]]
   }
 
