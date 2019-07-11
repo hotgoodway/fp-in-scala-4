@@ -228,7 +228,7 @@ trait Option[+A] {
 
 ---
 
-### EXERCISE 4.1
+### EXERCISE 
 
 基本関数を全て実装せよ
 
@@ -241,22 +241,18 @@ trait Option[+A] {
     case Some(a) => Some(f(a))
     case None => None
   }
-
   def getOrElse[B>:A](default: => B): B = this match {
     case Some(a) => a
     case None => default
   }
-
   def flatMap[B](f: A => Option[B]): Option[B] = this match {
     case Some(a) => f(a)
     case None => None
   }
-
   def orElse[B>:A](ob: => Option[B]): Option[B] = this match {
     case Some(_) => this
     case None => ob
   }
-
   def filter(f: A => Boolean): Option[A] = this match {
     case Some(a) if f(a) => this
     case _ => None
@@ -373,7 +369,7 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
 
 ```
   def sequence[A](a: List[Option[A]]): Option[List[A]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
   }
 ```
@@ -405,7 +401,203 @@ Option のリストを 1つのOptionにまとめる sequence 関数を記述せ�
 
 ```
   def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
-    case Nil => None
+    case Nil => Some(Nil)
     case h::t => map2(f(h), traverse(t)(f))(_ :: _) // Option[B], Option[List[B]]
   }
 ```
+
+---
+
+## 4.4 Either データ型
+
+---
+
+### 本章の目的
+
+エラーや例外を通常の値で表し、エラー処理とリカバリに共通するパターンを関数として抽出できるようにすること。
+
+Optionだと表現力が足りない
+
+---
+
+### Eitherの定義
+
+```
+  sealed trait Either[+E, +A]
+  case class Left[+E](value: E) extends Either[E, Nothing]
+  case class Right[+A](value: A) extends Either[Nothing, A]
+```
+
+- Right -> 成功 ※ 英語の意味は「正しい」
+- Left -> エラー
+
+---
+
+### mean の例
+
+
+```
+  def mean(xs: IndexedSeq[Double]): Either[String, Double] =
+    if (xs.isEmpty)
+      Left("mean of empty list!")
+    else
+      Right(xs.sum / xs.length)
+```
+
+String -> Exception に変更すると情報力がさらに増える
+
+---
+
+### Try 関数
+
+```
+  def Try[A](a: => A): Either[Exception, A] =
+    try Right(a)
+    case { case e: Exception => Left(e) }
+```
+
+---
+
+###  EXERCISE 4.6
+
+Right 値を操作する map, flatMap, orElse, map2 をEither に追加せよ。
+
+```
+sealed trait Either[+E, +A] {
+  def map[B](f: A => B): Either[E, B] = ???
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = ???
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] = ???
+  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] = ???
+}
+```
+
+---
+
+### ANSWER 4.6
+
+```
+sealed trait Either[+E, +A] {
+  def map[B](f: A => B): Either[E, B] = this match {
+    case Left(e) => Left(e)
+    case Right(a) => Right(f(a))
+  }
+
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] =
+    this match {
+      case Left(e) => Left(e)
+      case Right(a) => f(a)
+    }
+
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] =
+    this match {
+      case Left(_) => b
+      case Right(_) => this
+    }
+  ...
+```
+
+---
+
+### ANSWER 4.6-2
+
+```
+  ...
+  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    b.flatMap(bb => this.map(aa => f(aa, bb)))
+
+  def map2_2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    for {
+      aa <- this
+      bb <- b
+    } yield f(aa, bb)
+
+  def map2_3[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    (this, b) match {
+      case (Right(aa), Right(bb)) => Right(f(aa, bb))
+      case (Left(e), _) => Left(e)
+      case (_, Left(e)) => Left(e)
+    }
+```
+
+---
+
+### EXERCISE 4.7
+
+sequence と traverse を実装せよ。エラーが発生した場合は、最初に検出されたエラーを返す。
+
+```
+  def sequence[E,A](es: List[Either[E,A]]): Either[E,List[A]] = ???
+  
+  def traverse[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] = ???
+```
+
+---
+
+### ANSWER 4.7
+
+```
+  def sequence[E,A](es: List[Either[E,A]]): Either[E,List[A]] =
+    es match {
+      case Nil => Right(Nil)
+      case h::t => h.flatMap(hh => sequence(t).map(tt => hh::tt))
+    }
+
+  def traverse[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] =
+    es match {
+      case Nil => Right(Nil)
+      case h::t => f(h).map2(traverse(t)(f))(_ :: _) // Right(B), Right[List[B]]
+    }
+```
+
+---
+
+### Either を使ったデータ検証(Validate)
+
+```
+object Person {
+  def mkName(name: String): Either[String, Name] =
+    if (name == "" || name == null) Left("Name is empty.")
+    else Right(Name(name))
+
+  def mkAge(age: Int): Either[String, Age] =
+    if (age < 0) Left("Age is out of range.")
+    else Right(Age(age))
+
+  def mkPerson(name: String, age: Int): Either[String, Person] =
+    mkName(name).map2(mkAge(age))(Person(_, _))
+}
+```
+
+すべてのエラーを拾うにはどうすれば良い?
+
+---
+
+### OPEN ANSWER
+
+```
+  There are a number of variations on `Option` and `Either`. If we want to accumulate multiple errors, a simple
+  approach is a new data type that lets us keep a list of errors in the data constructor that represents failures:
+  
+  trait Partial[+A,+B]
+  case class Errors[+A](get: Seq[A]) extends Partial[A,Nothing]
+  case class Success[+B](get: B) extends Partial[Nothing,B]
+  
+  There is a type very similar to this called `Validation` in the Scalaz library. You can implement `map`, `map2`,
+  `sequence`, and so on for this type in such a way that errors are accumulated when possible (`flatMap` is unable to
+  accumulate errors--can you see why?). This idea can even be generalized further--we don't need to accumulate failing
+  values into a list; we can accumulate values using any user-supplied binary function.
+  
+  It's also possible to use `Either[List[E],_]` directly to accumulate errors, using different implementations of
+  helper functions like `map2` and `sequence`.
+```
+
+---
+
+## 4.5 まとめ
+
+* 関数型のエラー処理の基本原理を紹介した。
+* さらに、高階関数を使ってエラーの処理と伝搬に共通するパターンをカプセル化できるようにすることを紹介した
+
+---
+
+## おわり
