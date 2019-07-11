@@ -180,7 +180,8 @@ def mean(xs: Seq[Double], onEmpty: Double): Double =
 ### 却下理由
 
 呼び出し元処理で分岐できない
-※ 一つ目の方法と似ている
+
+※ 一つ目の方法に似ている
 
 ---
 
@@ -194,7 +195,9 @@ case class Some[+A](get: A) extends Option[A]
 case object None extends Option[Nothing]
 ```
 
-Optionを使った実装
+---
+
+### Optionを使った実装
 
 ```
 def mean(xs: Seq[Double]): Option[Double] =
@@ -225,12 +228,7 @@ trait Option[+A] {
   def filter(f: A => Boolean): Option[A]
 }
 ```
-
----
-
-### EXERCISE 
-
-基本関数を全て実装せよ
+EXERCISE 基本関数を全て実装せよ
 
 ---
 
@@ -260,6 +258,10 @@ trait Option[+A] {
 
 ```
 
+---
+
+---
+
 ### Option の基本関数を使用するシナリオ
 
 Employeeの例
@@ -272,7 +274,7 @@ Employeeの例
 
 flatMap をベースとして variance 関数を実装せよ
 
-シーケンスの平均をm、シーケンスの各要素をxとすれば、分散は math.pow(x - m, 2) の平均となる
+> シーケンスの平均をm、シーケンスの各要素をxとすれば、分散は math.pow(x - m, 2) の平均となる
 ```
   def variance(xs: Seq[Double]): Option[Double]
 ```
@@ -595,8 +597,8 @@ object Person {
 
 ## 4.5 まとめ
 
-* 関数型のエラー処理の基本原理を紹介した。
-* さらに、高階関数を使ってエラーの処理と伝搬に共通するパターンをカプセル化できるようにすることを紹介した
+* 関数型のエラー処理の基本原理を紹介した
+* さらに、高階関数を使って、エラーの処理と伝搬に共通するパターンをカプセル化できる
 
 ---
 
