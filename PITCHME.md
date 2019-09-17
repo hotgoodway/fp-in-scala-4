@@ -25,6 +25,7 @@
 1. 法則が含まれている代数から作業を開始
 2. 表現を後から決定する
 
+
 **構文解析には特に適している**
 
 ---
@@ -44,7 +45,9 @@ def char(c: Char): Parser[Char]
 
 ```
 
-Parser という型を作り出し、Parser の結果型を指定するパラメータを１つ定義している。
+Parser という型を作り出し、
+
+Parser の結果型を指定するパラメータを１つ定義している。
 
 ---
 
@@ -52,6 +55,7 @@ Parser という型を作り出し、Parser の結果型を指定するパラメ
 
 * 成功した場合は有効な型の結果を返し
 * 失敗した場合は失敗に関する情報を返し
+
 
 ```
 def run[A](p: Parser[A])(input: String): Either[ParseError, A]
@@ -69,8 +73,6 @@ trait Parsers[ParseError, Parser[+_]]
 
 1. Parser は型パラメータであり、それ自体が共変の型コンストラクタである
 2. Parser 型コンストラクタが Char に適用される
-
----
 
 ### 明白な法則
 
@@ -94,13 +96,13 @@ def run(string(s))(s) == Right(s)
 
 ---
 
-### どちらかの文字列を認識したい場合
+#### どちらかの文字列を認識したい場合
 
 ```
 def orString(s1: String, s2: String): Parser[String]
 ```
 
-### 多相にすると
+#### 多相にすると
 
 ```
 def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]
