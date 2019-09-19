@@ -243,11 +243,13 @@ def succeed[A](a: A): Parser[A] =
 ### 9.2.1 スライスと空ではない繰り返し
 
 many と map を組み合わせて、文字'a'の数を数えるのが、
-List[Char]を構築するのが効率悪いので、改善のコンビネータを作成。
+List[Char]を構築するのが効率悪いので、改善のコンビネータを導入。
 
 ```
 def slice[A](p: Parser[A]): Parser[String]
 ```
+
+manyが蓄積したリストを無視して、パーサーとマッチした部分の入力文字列だけ返す。
 
 ???
 
@@ -259,9 +261,151 @@ def slice[A](p: Parser[A]): Parser[String]
 def many1[A](p: Parser[A]): Parser[List[A]]
 ```
 
+many1は、プリミティブではない、
+many をベースとして定義できる。
+※ many1は p の後ろにmany(p)が続いてるだけ
 
+1つ目のパーサーを実行し、成功すると別のパーサを実行する product を導入。
 
+```
+def product[A, B](p: Parser[A], p2: Parser[B]): Parser[(A, B)]
 
+// 中置記法も追加
+def **[B](p2: => Parser[B]): Parser[(A,B)] =
+  self.product(p,p2)
+```
+
+---
+
+#### EXERCISE 9.1
+
+> product を使ってコンビネータ map2 を実装し、
+これを使って、many をベースとして many1 を実装せよ。
+
+```
+def map2[A, B, C](p: Parser[A], p2: Parser[B])(f: (A, B) => C): Parser[C]
+```
+
+---
+
+#### ANSWER 9.1
+
+```
+def map2[A, B, C](p: Parser[A], p2: => Parser[B])(f: (A, B) => C): Parser[C] =
+  for { a <- p; b <- p2 } yield f(a,b)
+```
+
+```
+def many1[A](p: Parser[A]): Parser[List[A]] =
+  map2(p, many(p))(_ :: _)
+```
+
+---
+
+#### 例
+
+many1を使って、0個以上の'a'に続いて1個以上の'b'を解析するためのパーサー
+
+```
+char('a').many.slice.map(_.size) ** char('b').many1.slice.map(_size)
+```
+
+---
+
+#### EXERCISE 9.2
+
+> 難問: product の振る舞いを定義する法則を考え出せ。
+
+---
+
+#### ANSWER 9.2
+
+```
+/*
+These can be implemented using a for-comprehension, 
+which delegates to the `flatMap` and `map` implementations we've provided on `ParserOps`, 
+or they can be implemented in terms of these functions directly.
+*/
+def product[A,B](p: Parser[A], p2: => Parser[B]): Parser[(A,B)] =
+  flatMap(p)(a => map(p2)(b => (a,b)))
+```
+
+---
+
+#### EXERCISE 9.3
+
+> 難問: or, map2, succeedをベースとして manyを定義せよ
+
+---
+
+#### ANSWER 9.3
+
+```
+def many[A](p: Parser[A]): Parser[List[A]] =
+  map2(p, many(p))(_ :: _) or succeed(List())
+```
+
+---
+
+#### EXERCISE 9.4
+
+> 難問: map2 と succeed を使って
+先の listOfN コンビネータを実装せよ
+
+```
+def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]
+```
+
+---
+
+#### ANSWER 9.4
+
+```
+def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]] =
+  if (n <= 0) succeed(List())
+  else map2(p, listOfN(n-1, p))(_ :: _)
+```
+
+---
+
+#### 例
+
+or, map2, succeed をベースとして many の実装
+
+```
+def many[A](p: Parser[A]): Parser[List[A]] =
+  map2(p, many(p))(_ :: _) or succeed(List())
+```
+
+問題点: map2の第2引数 many(p)の評価に置いて正格である。
+※ 常に評価される
+
+```
+many(p)
+map2(p, many(p))(_ :: _)
+map2(p, map2(p, many(p))(_ :: _))(_ :: _)
+map2(p, map2(p, map2(p, many(p)))(_ :: _))(_ :: _))(_ :: _)
+...
+```
+
+#### 非正格にする
+
+```
+def product[A, B](p: Parser[A], p2: => Parser[B]): Parser[(A, B)]
+
+def map2[A, B, C](p: Parser[A], p2: => Parser[B])(f: (A, B) => C): Parser[C] =
+  product(p, p2) map (f.tupled)
+```
+
+---
+
+#### or も非正格にすべき
+
+入力で p1を試し、p1に失敗した場合にのみp2を試す
+
+```
+def or[B>:A](p2: => Parser[B]): Parser[B]
+```
 
 
 
